@@ -1,0 +1,8 @@
+subroutine Simulation_frontLevelFunc(coords, level)
+#include "constants.h"
+    implicit none
+    REAL,dimension(MDIM),intent(in) :: coords
+    real, intent(out)               :: level
+    
+    level = coords(1) - 0.0144
+end subroutine  Simulation_frontLevelFunc

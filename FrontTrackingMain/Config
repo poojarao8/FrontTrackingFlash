@@ -1,0 +1,10 @@
+#Config file for main subunit of FrontTracking unit
+
+DEFAULT Active
+EXCLUSIVE Active Passive
+
+D   useFrontTracking       Whether to use front tracking [TRUE] or not [FALSE]
+# Default value is TRUE FrontTrackingMain implementation gets included in configuration.
+PARAMETER useFrontTracking    BOOLEAN TRUE
+
+LIBRARY FTAPI

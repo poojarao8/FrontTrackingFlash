@@ -1,0 +1,7 @@
+#Config file for FrontTracking unit
+DEFAULT FrontTrackingMain
+
+D   useFrontTracking       Whether to use front tracking [TRUE] or not [FALSE]
+# Value is meant to be overridden if FrontTrackingMain implementation gets included.
+PARAMETER useFrontTracking    BOOLEAN FALSE
+

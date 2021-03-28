@@ -1,0 +1,48 @@
+subroutine FrontTracking_updateComp()
+    use Grid_interface, only: Grid_getBlkPtr, Grid_getBlkIndexLimits,&
+        Grid_getLocalNumBlks, Grid_getListOfBlocks, Grid_getCellCoords, &
+        Grid_getBlkBoundBox, Grid_releaseBlkPtr, Grid_getGeometry 
+    use FrontTracking_data, ONLY: fr_useFrontTracking, FrontTracking_compGrid 
+    use Grid_data, only : gr_delta
+        
+implicit none
+
+#include "constants.h"
+#include "Flash.h"
+#include "Eos.h"
+
+subroutine FrontTracking_fillGhostStates()
+
+#include "Flash.h"
+#include "constants.h"
+
+    use Grid_interface, ONLY : Grid_getBlkIndexLimits, Grid_getBlkPtr, &
+                        Grid_putBlkData, Grid_releaseBlkPtr, Grid_getCellCoords
+    use Driver_interface, ONLY : Driver_abortFlash
+
+    implicit none
+
+    real, pointer                       ::  solnData(:,:,:,:)
+
+    integer                             ::  blkID
+    integer                             ::  icell, jcell, kcell
+    integer, dimension(2, MDIM)         ::  blkLimits, blkLimitsGC
+    real                                ::  dens_sum, pres_sum
+    real                                ::  velx_sum, vely_sum, velz_sum
+    integer                             ::  c, num, i, j, k
+
+    ! JAM -- Added for FTAPI   FIXME: I would rather have this passed in than
+    !                                 hardcoded, it is not compatible with 
+    !                                 a lot of the options in FLASH
+    blkID = 1
+
+    call Grid_getDeltas(blkID,del)
+    call Grid_getBlkIndexLimits(blkID,blkLimits,blkLimitsGC)
+
+    ! FIXME: Hardcoded to two physical components -- will have to do for now
+    ! FIXME: SUPER UGLY! Need to be using vectors and what not...
+    do icell = blkLimitsGC(LOW,IAXIS), blkLimitsGC(HIGH,IAXIS)
+        do jcell = blkLimitsGC(LOW,JAXIS), blkLimitsGC(HIGH,JAXIS)
+            do kcell = blkLimitsGC(LOW,KAXIS), blkLimitsGC(HIGH,KAXIS)
+
+end subroutine

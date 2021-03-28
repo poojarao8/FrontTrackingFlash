@@ -1,0 +1,172 @@
+subroutine FrontTracking_fillGhostStates()
+
+#include "Flash.h"
+#include "constants.h"
+
+    use Grid_interface, ONLY : Grid_getBlkIndexLimits, Grid_getBlkPtr, &
+                        Grid_putBlkData, Grid_releaseBlkPtr, Grid_getCellCoords
+    use Driver_interface, ONLY : Driver_abortFlash
+
+    implicit none
+
+    real, pointer                       ::  solnData(:,:,:,:)
+
+    integer                             ::  blkID
+    integer                             ::  icell, jcell, kcell
+    integer, dimension(2, MDIM)         ::  blkLimits, blkLimitsGC
+    real                                ::  dens_sum, pres_sum
+    real                                ::  velx_sum, vely_sum, velz_sum
+    integer                             ::  c, num, i, j, k
+
+    ! JAM -- Added for FTAPI   FIXME: I would rather have this passed in than
+    !                                 hardcoded, it is not compatible with 
+    !                                 a lot of the options in FLASH
+    blkID = 1
+
+    call Grid_getDeltas(blkID,del)
+    call Grid_getBlkIndexLimits(blkID,blkLimits,blkLimitsGC)
+
+    ! FIXME: Hardcoded to two physical components -- will have to do for now
+    ! FIXME: SUPER UGLY! Need to be using vectors and what not...
+    do icell = blkLimitsGC(LOW,IAXIS), blkLimitsGC(HIGH,IAXIS)
+        do jcell = blkLimitsGC(LOW,JAXIS), blkLimitsGC(HIGH,JAXIS)
+            do kcell = blkLimitsGC(LOW,KAXIS), blkLimitsGC(HIGH,KAXIS)
+
+                c = solnData(COMP_VAR, icell, jcell, kcell)
+                
+                ! If component of cell is 2 then G0 should match the cell
+                ! states, otherwise G1 should match the cell states
+                if (c == 2) then 
+                    solnData(G0DENS_VAR, icell, jcell, kcell) = &
+                        solnData(DENS_VAR, icell, jcell, kcell)
+                    solnData(G0PRES_VAR, icell, jcell, kcell) = &
+                        solnData(PRES_VAR, icell, jcell, kcell)
+                    solnData(G0VELX_VAR, icell, jcell, kcell) = &
+                        solnData(VELX_VAR, icell, jcell, kcell)
+                    solnData(G0VELY_VAR, icell, jcell, kcell) = &
+                        solnData(VELY_VAR, icell, jcell, kcell)
+                    solnData(G0VELZ_VAR, icell, jcell, kcell) = &
+                        solnData(VELZ_VAR, icell, jcell, kcell)
+
+                    solnData(G1DENS_VAR, icell, jcell, kcell) = 0.0
+                    solnData(G1PRES_VAR, icell, jcell, kcell) = 0.0
+                    solnData(G1VELX_VAR, icell, jcell, kcell) = 0.0
+                    solnData(G1VELY_VAR, icell, jcell, kcell) = 0.0
+                    solnData(G1VELZ_VAR, icell, jcell, kcell) = 0.0
+                else
+                    solnData(G1DENS_VAR, icell, jcell, kcell) = &
+                        solnData(DENS_VAR, icell, jcell, kcell)
+                    solnData(G1PRES_VAR, icell, jcell, kcell) = &
+                        solnData(PRES_VAR, icell, jcell, kcell)
+                    solnData(G1VELX_VAR, icell, jcell, kcell) = &
+                        solnData(VELX_VAR, icell, jcell, kcell)
+                    solnData(G1VELY_VAR, icell, jcell, kcell) = &
+                        solnData(VELY_VAR, icell, jcell, kcell)
+                    solnData(G1VELZ_VAR, icell, jcell, kcell) = &
+                        solnData(VELZ_VAR, icell, jcell, kcell)
+
+                    solnData(G0DENS_VAR, icell, jcell, kcell) = 0.0
+                    solnData(G0PRES_VAR, icell, jcell, kcell) = 0.0
+                    solnData(G0VELX_VAR, icell, jcell, kcell) = 0.0
+                    solnData(G0VELY_VAR, icell, jcell, kcell) = 0.0
+                    solnData(G0VELZ_VAR, icell, jcell, kcell) = 0.0
+                end if
+
+                ! If component of cell is 2 then G1 should be an average of
+                ! neighbors with component 3 and vice versa
+                dens_sum = 0.0
+                pres_sum = 0.0
+                velx_sum = 0.0
+                vely_sum = 0.0
+                velz_sum = 0.0
+                num = 0
+                if (c == 2) then 
+                    ! Loop over all neighbors
+                    ! TODO: Verify FORTRAN loop acts as a strict < upper bound
+                    do i = icell - 1, icell + 2     
+                        do j = jcell - 1, jcell + 2
+                            do k = kcell - 1, kcell + 2
+                                if (i < 1 .or. j < 1 .or. k < 1) then
+                                    continue
+                                end if
+                                if (i .ge. blkLimitsGC(HIGH,IAXIS) .or. &
+                                    j .ge. blkLimitsGC(HIGH,JAXIS) .or. &
+                                    k .ge. blkLimitsGC(HIGH,KAXIS)) then
+                                    continue
+                                end if
+                                if (k .lt. kcell .or. (k .eq. kcell .and. j .lt. jcell) .or. &
+                                   (k .eq. kcell .and. j .eq. jcell .and. i .lt. icell)) then
+                                    dens_sum = dens_sum + solnData(G1DENS_VAR,i,j,k)
+                                    pres_sum = pres_sum + solnData(G1PRES_VAR,i,j,k)
+                                    velx_sum = velx_sum + solnData(G1VELX_VAR,i,j,k)
+                                    vely_sum = vely_sum + solnData(G1VELY_VAR,i,j,k)
+                                    velz_sum = velz_sum + solnData(G1VELZ_VAR,i,j,k)
+                                    num = num + 1
+                                else
+                                    if (solnData(COMP_VAR,i,j,k) .eq. 3) then
+                                        dens_sum = dens_sum + solnData(DENS_VAR,i,j,k)
+                                        pres_sum = pres_sum + solnData(PRES_VAR,i,j,k)
+                                        velx_sum = velx_sum + solnData(VELX_VAR,i,j,k)
+                                        vely_sum = vely_sum +  solnData(VELY_VAR,i,j,k)
+                                        velz_sum = velz_sum + solnData(VELZ_VAR,i,j,k)
+                                        num = num +1
+                                    end if
+                                end if
+                            end do
+                        end do
+                    end do
+                    solnData(G1DENS_VAR, icell, jcell, kcell) = dens_sum/num
+                    solnData(G1PRES_VAR, icell, jcell, kcell) = pres_sum/num
+                    solnData(G1VELX_VAR, icell, jcell, kcell) = velx_sum/num
+                    solnData(G1VELY_VAR, icell, jcell, kcell) = vely_sum/num
+                    solnData(G1VELZ_VAR, icell, jcell, kcell) = velz_sum/num
+                else
+                    ! Loop over all neighbors
+                    ! TODO: Verify FORTRAN loop acts as a strict < upper bound
+                    do i = icell - 1, icell + 2     
+                        do j = jcell - 1, jcell + 2
+                            do k = kcell - 1, kcell + 2
+                                if (i < 1 .or. j < 1 .or. k < 1) then
+                                    continue
+                                end if
+                                if (i .ge. blkLimitsGC(HIGH,IAXIS) .or. &
+                                    j .ge. blkLimitsGC(HIGH,JAXIS) .or. &
+                                    k .ge. blkLimitsGC(HIGH,KAXIS)) then
+                                    continue
+                                end if
+                                if (k .lt. kcell .or. (k .eq. kcell .and. j .lt. jcell) .or. &
+                                   (k .eq. kcell .and. j .eq. jcell .and. i .lt. icell)) then
+                                    dens_sum = dens_sum + solnData(G0DENS_VAR,i,j,k)
+                                    pres_sum = pres_sum + solnData(G0PRES_VAR,i,j,k)
+                                    velx_sum = velx_sum + solnData(G0VELX_VAR,i,j,k)
+                                    vely_sum = vely_sum + solnData(G0VELY_VAR,i,j,k)
+                                    velz_sum = velz_sum + solnData(G0VELZ_VAR,i,j,k)
+                                    num = num + 1
+                                else
+                                    if (solnData(COMP_VAR,i,j,k) .eq. 2) then
+                                        dens_sum = dens_sum + solnData(DENS_VAR,i,j,k)
+                                        pres_sum = pres_sum + solnData(PRES_VAR,i,j,k)
+                                        velx_sum = velx_sum + solnData(VELX_VAR,i,j,k)
+                                        vely_sum = vely_sum + solnData(VELY_VAR,i,j,k)
+                                        velz_sum = velz_sum + solnData(VELZ_VAR,i,j,k)
+                                        num = num +1
+                                    end if
+                                end if
+                            end do
+                        end do
+                    end do
+                    solnData(G0DENS_VAR, icell, jcell, kcell) = dens_sum/num
+                    solnData(G0PRES_VAR, icell, jcell, kcell) = pres_sum/num
+                    solnData(G0VELX_VAR, icell, jcell, kcell) = velx_sum/num
+                    solnData(G0VELY_VAR, icell, jcell, kcell) = vely_sum/num
+                    solnData(G0VELZ_VAR, icell, jcell, kcell) = velz_sum/num
+                end if        
+            end do
+        end do
+    end do     
+
+    call Grid_releaseBlkPtr(blkID,solnData)
+
+    return
+
+end subroutine FrontTracking_fillGhostStates

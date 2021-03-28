@@ -1,0 +1,71 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+DENS_VAR	FrontTracking_globals.h	10;"	d
+DENS_VAR	defunct/fr_interface.c	10;"	d	file:
+FLASH_DATA	defunct/fr_interface.c	/^typedef struct _FLASH_DATA FLASH_DATA;$/;"	t	typeref:struct:_FLASH_DATA	file:
+FLASH_INIT_DATA	fr_init.c	/^typedef struct _FLASH_INIT_DATA FLASH_INIT_DATA;$/;"	t	typeref:struct:_FLASH_INIT_DATA	file:
+FLASH_VEL_PARAMS	FrontTracking_globals.h	/^typedef struct _FLASH_VEL_PARAMS FLASH_VEL_PARAMS;$/;"	t	typeref:struct:_FLASH_VEL_PARAMS
+FLASH_VEL_PARAMS	defunct/fr_interface.c	/^typedef struct _FLASH_VEL_PARAMS FLASH_VEL_PARAMS;$/;"	t	typeref:struct:_FLASH_VEL_PARAMS	file:
+FNAME	FrontTracking_globals.h	1;"	d
+FNAME	defunct/fr_interface.c	5;"	d	file:
+FrontTracking_cellComponent	FrontTracking_cellComponent.F90	/^subroutine FrontTracking_cellComponent(/;"	s
+FrontTracking_init	FrontTracking_init.F90	/^subroutine FrontTracking_init(/;"	s
+FrontTracking_output	FrontTracking_output.F90	/^subroutine FrontTracking_output(/;"	s
+FrontTracking_propagate	FrontTracking_propagate.F90	/^subroutine FrontTracking_propagate(/;"	s
+RK_PRINT	FrontTracking_globals.h	4;"	d
+_FLASH_DATA	defunct/fr_interface.c	/^struct _FLASH_DATA$/;"	s	file:
+_FLASH_INIT_DATA	fr_init.c	/^struct _FLASH_INIT_DATA$/;"	s	file:
+_FLASH_VEL_PARAMS	FrontTracking_globals.h	/^struct _FLASH_VEL_PARAMS$/;"	s
+_FLASH_VEL_PARAMS	defunct/fr_interface.c	/^struct _FLASH_VEL_PARAMS$/;"	s	file:
+aindex	FrontTracking_globals.h	2;"	d
+aindex	defunct/fr_interface.c	6;"	d	file:
+dens_array	defunct/fr_interface.c	/^    double *dens_array;$/;"	m	struct:_FLASH_DATA	file:
+dens_array	fr_init.c	/^    double *dens_array;$/;"	m	struct:_FLASH_INIT_DATA	file:
+flash_rt_level_func	defunct/fr_interface.c	/^static double flash_rt_level_func( POINTER func_params, double *coords) $/;"	f	file:
+flash_rt_level_func	fr_init.c	/^static double flash_rt_level_func( POINTER func_params, double *coords) $/;"	f	file:
+flash_rt_level_func2	defunct/fr_interface.c	/^static double flash_rt_level_func2( POINTER func_params, double *coords) $/;"	f	file:
+flash_vel	defunct/fr_interface.c	/^static int flash_vel($/;"	f	file:
+flash_vel	fr_init.c	/^static int flash_vel($/;"	f	file:
+flash_vel_intrp	defunct/fr_interface.c	/^static int flash_vel_intrp($/;"	f	file:
+flash_vel_intrp	fr_init.c	/^static int flash_vel_intrp($/;"	f	file:
+flash_vel_intrp_polar	fr_init.c	/^static int flash_vel_intrp_polar($/;"	f	file:
+fr_bcFlash2FT	fr_bcFlash2FT.c	/^int fr_bcFlash2FT(int flashBC)$/;"	f
+fr_getCellOfPoint	defunct/fr_getCellOfPoint.F90	/^subroutine fr_getCellOfPoint(/;"	s
+fr_getCellOfPoint	defunct/fr_interface.c	/^static void fr_getCellOfPoint(double *L,double *U,int *gmax,double *coords,int *gcoords)$/;"	f	file:
+fr_getCellOfPoint	fr_init.c	/^static void fr_getCellOfPoint(double *L,double *U,int *gmax,double *coords,int *gcoords)$/;"	f	file:
+fr_init	fr_init.c	/^void FNAME(fr_init)(int *dim,$/;"	f
+fr_output	defunct/fr_interface.c	/^void FNAME(fr_output)()$/;"	f
+fr_output	fr_output.c	/^void FNAME(fr_output)(char *filename, int length)$/;"	f
+fr_propagate	defunct/fr_interface.c	/^void FNAME(fr_propagate)(double * grid_dt, double *xvel,double *yvel)$/;"	f
+fr_propagate	fr_propagate.c	/^void FNAME(fr_propagate)(double *grid_dt, $/;"	f
+fr_setPointVel	defunct/fr_interface.c	/^static void fr_setPointVel()$/;"	f	file:
+free	fr_init.c	6;"	d	file:
+front	defunct/fr_interface.c	/^static Front front;$/;"	v	file:
+front	fr_init.c	/^Front front; \/\/ global variable$/;"	v
+ft_init	defunct/fr_interface.c	/^void FNAME(ft_init)($/;"	f
+getDouble	defunct/fr_interface.c	/^static double getDouble(POINTER value)$/;"	f	file:
+getDouble	fr_init.c	/^static double getDouble(POINTER value)$/;"	f	file:
+isize	FrontTracking_globals.h	/^    int isize;$/;"	m	struct:_FLASH_VEL_PARAMS
+isize	defunct/fr_interface.c	/^    int isize;$/;"	m	struct:_FLASH_DATA	file:
+isize	defunct/fr_interface.c	/^    int isize;$/;"	m	struct:_FLASH_VEL_PARAMS	file:
+isize	fr_init.c	/^    int isize;$/;"	m	struct:_FLASH_INIT_DATA	file:
+jsize	FrontTracking_globals.h	/^    int jsize;$/;"	m	struct:_FLASH_VEL_PARAMS
+jsize	defunct/fr_interface.c	/^    int jsize;$/;"	m	struct:_FLASH_DATA	file:
+jsize	defunct/fr_interface.c	/^    int jsize;$/;"	m	struct:_FLASH_VEL_PARAMS	file:
+jsize	fr_init.c	/^    int jsize;$/;"	m	struct:_FLASH_INIT_DATA	file:
+ksize	FrontTracking_globals.h	/^    int ksize;$/;"	m	struct:_FLASH_VEL_PARAMS
+ksize	defunct/fr_interface.c	/^    int ksize;$/;"	m	struct:_FLASH_DATA	file:
+ksize	defunct/fr_interface.c	/^    int ksize;$/;"	m	struct:_FLASH_VEL_PARAMS	file:
+ksize	fr_init.c	/^    int ksize;$/;"	m	struct:_FLASH_INIT_DATA	file:
+plot_levelset	defunct/fr_interface.c	/^void plot_levelset(LEVEL_FUNC_PACK lfp)$/;"	f
+velo_plot	fr_propagate.c	/^void velo_plot(double *vx, double *vy, double *vz, char *fname)$/;"	f
+xvel	FrontTracking_globals.h	/^    double *xvel;$/;"	m	struct:_FLASH_VEL_PARAMS
+xvel	defunct/fr_interface.c	/^    double *xvel;$/;"	m	struct:_FLASH_VEL_PARAMS	file:
+yvel	FrontTracking_globals.h	/^    double *yvel;$/;"	m	struct:_FLASH_VEL_PARAMS
+yvel	defunct/fr_interface.c	/^    double *yvel;$/;"	m	struct:_FLASH_VEL_PARAMS	file:
+zvel	FrontTracking_globals.h	/^    double *zvel;$/;"	m	struct:_FLASH_VEL_PARAMS
+zvel	defunct/fr_interface.c	/^    double *zvel;$/;"	m	struct:_FLASH_VEL_PARAMS	file:

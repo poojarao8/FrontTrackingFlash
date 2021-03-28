@@ -1,0 +1,254 @@
+subroutine FrontTracking_getVel(tmp, coords, velocity, lcomp, rcomp)
+
+#include "Flash.h"
+#include "constants.h"
+
+    use Grid_interface, ONLY : Grid_getBlkIndexLimits, Grid_getBlkPtr, &
+                        Grid_putBlkData, Grid_releaseBlkPtr, Grid_getCellCoords
+    use Driver_interface, ONLY : Driver_abortFlash
+
+    implicit none
+    real, POINTER, INTENT(IN)               ::  tmp
+    real, INTENT(IN), dimension(MDIM)       ::  coords
+    real, INTENT(OUT), dimension(MDIM)      ::  velocity
+    real, INTENT(IN)                        ::  lcomp
+    real, INTENT(IN)                        ::  rcomp
+
+    real, pointer                           ::  solnData(:,:,:,:)
+
+#ifdef FIXEDBLOCKSIZE
+    real,DIMENSION(MAXCELLS),target         ::  iCoord, jCoord, kCoord
+#else
+    real, allocatable,DIMENSION(:),target   ::  iCoord, jCoord, kCoord
+#endif
+
+    integer                                 ::  blkID, isizeGC, jsizeGC, ksizeGC
+    integer                                 ::  icell, jcell, kcell
+    integer, dimension(2, MDIM)             ::  blkLimits, blkLimitsGC
+    logical                                 ::  gcell = .true.
+    real, dimension(MDIM)                   ::  del
+    real, dimension(MDIM)                   ::  normal
+    real, dimension(NPROP_VARS)             ::  lstate, rstate, midstate
+    real                                    ::  imin, jmin, kmin
+
+    ! JAM -- Added for FTAPI   FIXME: I would rather have this passed in than
+    !                                 hardcoded, it is not compatible with 
+    !                                 a lot of the options in FLASH
+    blkID = 1
+
+    call Grid_getDeltas(blkID,del)
+    call Grid_getBlkIndexLimits(blkID,blkLimits,blkLimitsGC)
+    iSizeGC = blkLimitsGC(HIGH,IAXIS)-blkLimitsGC(LOW,IAXIS)+1
+    jSizeGC = blkLimitsGC(HIGH,JAXIS)-blkLimitsGC(LOW,JAXIS)+1
+    kSizeGC = blkLimitsGC(HIGH,KAXIS)-blkLimitsGC(LOW,KAXIS)+1
+
+#ifndef FIXEDBLOCKSIZE
+    numCells = max(isizeGC,jsizeGC)
+    numCells = max(numCells,ksizeGC)
+ 
+    allocate(iCoord(numCells))
+    allocate(jCoord(numCells))
+    allocate(kCoord(numCells))
+#endif
+
+    call Grid_getCellCoords(IAXIS,blkID,CENTER,gcell,iCoord,isizeGC)
+    if (NDIM .GE. 2) then 
+        call Grid_getCellCoords(JAXIS,blkID,CENTER,gcell,jCoord,jsizeGC)
+    else
+        jCoord(:) = 0.0
+    end if        
+    if (NDIM .GE. 2) then 
+        call Grid_getCellCoords(KAXIS,blkID,CENTER,gcell,kCoord,ksizeGC)
+    else
+        kCoord(:) = 0.0
+    end if
+
+    call Grid_getBlkPtr(blkID,solnData)
+
+    !! FIXME: This needs to be checked, it may not work?
+    !! NOTE: IAXIS = 1, JAXIS = 2, KAXIS = 3, use these for FLASH syntax
+    !! Need the + 1 to work, since FORTRAN starts indexing at 1
+    icell = int(0.5 + (coords(IAXIS) - iCoord(1))/del(IAXIS)) + 1
+    if (NDIM .GE. 2) then
+        jcell = int(0.5 + (coords(JAXIS) - jCoord(1))/del(JAXIS)) + 1
+    else 
+        jcell = 1
+    end if
+    if (NDIM .GE. 3) then
+        kcell = int(0.5 + (coords(KAXIS) - kCoord(1))/del(KAXIS)) + 1
+    else
+        kcell = 1
+    end if
+
+    ! To fix when the coord is on the up boundaries as the above code
+    ! doesn't quite handle it properly
+    icell = min(icell,MAXCELLS)
+    jcell = min(jcell,MAXCELLS)
+    kcell = min(kcell,MAXCELLS)
+
+! Code below has rounding problems for the sanity check since FT can have coords
+! which fall off the domain... FIXME: Why does FT have coords off the domain???
+    !! Sanity check, make sure that the coords are in the cell we have selected
+!    if (.NOT. (iCoord(icell) - 0.5000000000001*del(IAXIS) .LE. coords(IAXIS) .AND. &
+!               iCoord(icell) + 0.5000000000001*del(IAXIS) .GE. coords(IAXIS))) then
+!        call Driver_abortFlash('[FTI_getVelocity] ERROR: icell != icoord(IAXIS)') 
+!    end if
+!    if (NDIM .GE. 2) then
+!        if (.NOT. (jCoord(jcell) - 0.5000000000001*del(JAXIS) .LE. coords(JAXIS) .AND. &
+!                   jCoord(jcell) + 0.5000000000001*del(JAXIS) .GE. coords(JAXIS))) then
+!            call Driver_abortFlash('[FTI_getVelocity] ERROR: jcell != icoord(JAXIS)') 
+!        end if
+!    end if
+!    if (NDIM .GE. 3) then
+!        if (.NOT. (kCoord(kcell) - 0.5000000000001*del(KAXIS) .LE. coords(KAXIS) .AND. &
+!                   kCoord(kcell) + 0.5000000000001*del(KAXIS) .GE. coords(KAXIS))) then
+!            call Driver_abortFlash('[FTI_getVelocity] ERROR: kcell != icoord(KAXIS)') 
+!        end if
+!    end if
+
+    ! Determine the bounding box (imin, imin+1), (jmin, jmin+1), (kmin, kmin+1) of cells
+    ! for the front pt, so that we know which cell states to use for the interpolation
+    if (coords(IAXIS) .lt. iCoord(icell)) then
+        imin = icell
+    else
+        imin = icell - 1 
+    end if
+    if (coords(JAXIS) .lt. jCoord(jcell)) then
+        jmin = jcell
+    else
+        jmin = jcell - 1 
+    end if
+    if (coords(KAXIS) .lt. kCoord(kcell)) then
+        kmin = kcell
+    else
+        kmin = kcell - 1 
+    end if
+
+    call interpolateStates(imin, jmin, kmin, coords, lstate, lcomp)
+    call interpolateStates(imin, jmin, kmin, coords, rstate, rcomp)
+
+    call FTAPI_Normal(coords, normal)
+
+    !FIXME: NEED TO USE THE NORMAL TO CALC NORMAL VELOCITY AND STORE IT IN XVEL
+
+    !FIXME: Probably need to make an EOS call here before I pass into RiemSolver??
+    call RiemSolver(lstate, rstate, midstate)
+
+    velocity(IAXIS) = midstate(VELX_VAR)
+    velocity(JAXIS) = midstate(VELY_VAR)
+    velocity(KAXIS) = midstate(VELZ_VAR)
+
+    call Grid_releaseBlkPtr(blkID,solnData)
+
+#ifndef FIXEDBLOCKSIZE
+    deallocate(iCoord)
+    deallocate(jCoord)
+    deallocate(kCoord)
+#endif
+
+
+    subroutine interpolateStates(imin, jmin, kmin, coords, state, comp)
+
+        use Grid_interface, ONLY : Grid_getBlkIndexLimits, Grid_getBlkPtr, &
+                            Grid_putBlkData, Grid_releaseBlkPtr, Grid_getCellCoords
+        use Driver_interface, ONLY : Driver_abortFlash
+
+        implicit none
+        integer, INTENT(IN)                     ::  imin, jmin, kmin
+        real,INTENT(IN),dimension(MDIM)         ::  coords
+        real,INTENT(OUT),dimension(NPROP_VARS)  ::  state
+        real,INTENT(IN)                         ::  comp
+
+        real, pointer                           ::  solnData(:,:,:,:)
+        
+#ifdef FIXEDBLOCKSIZE
+        real,DIMENSION(MAXCELLS),target         ::  iCoord, jCoord, kCoord
+#else
+        real, allocatable,DIMENSION(:),target   ::  iCoord, jCoord, kCoord
+#endif
+
+        integer                                 ::  blkID, isizeGC, jsizeGC, ksizeGC
+        integer                                 ::  icell, jcell, kcell
+        integer                                 ::  i, j, k, ii, jj, kk
+        integer, dimension(2, MDIM)             ::  blkLimits, blkLimitsGC
+        logical                                 ::  gcell = .true.
+        real, dimension(2)                      ::  fraci, fracj, frack
+        real                                    ::  weight, dens, pres, intDens, intPres
+        real                                    ::  xvel, yvel, zvel
+        real                                    ::  intXvel, intYvel, intZvel
+
+        call Grid_getBlkIndexLimits(blkID,blkLimits,blkLimitsGC)
+        iSizeGC = blkLimitsGC(HIGH,IAXIS)-blkLimitsGC(LOW,IAXIS)+1
+        jSizeGC = blkLimitsGC(HIGH,JAXIS)-blkLimitsGC(LOW,JAXIS)+1
+        kSizeGC = blkLimitsGC(HIGH,KAXIS)-blkLimitsGC(LOW,KAXIS)+1
+
+#ifndef FIXEDBLOCKSIZE
+        numCells = max(isizeGC,jsizeGC)
+        numCells = max(numCells,ksizeGC)
+     
+        allocate(iCoord(numCells))
+        allocate(jCoord(numCells))
+        allocate(kCoord(numCells))
+#endif
+
+        call Grid_getCellCoords(IAXIS,blkID,CENTER,gcell,iCoord,isizeGC)
+        if (NDIM .GE. 2) then 
+            call Grid_getCellCoords(JAXIS,blkID,CENTER,gcell,jCoord,jsizeGC)
+        else
+            jCoord(:) = 0.0
+        end if        
+        if (NDIM .GE. 2) then 
+            call Grid_getCellCoords(KAXIS,blkID,CENTER,gcell,kCoord,ksizeGC)
+        else
+            kCoord(:) = 0.0
+        end if
+
+        call Grid_getBlkPtr(blkID,solnData)
+
+        fraci(1) = (coords(IAXIS) - iCoord(imin)) / (iCoord(imin+1) - iCoord(imin))
+        fracj(1) = (coords(JAXIS) - jCoord(jmin)) / (jCoord(jmin+1) - jCoord(jmin))
+        frack(1) = (coords(KAXIS) - kCoord(kmin)) / (kCoord(kmin+1) - kCoord(kmin))
+        fraci(2) = 1.0 - fraci(1)
+        fracj(2) = 1.0 - fracj(1)
+        frack(2) = 1.0 - frack(1)
+
+        do i = imin, imin + 2
+            do j = jmin, jmin + 2
+                do k = kmin, kmin + 2
+                    ! left bound will multiply by frac_(1) and right bound by frac_(2)
+                    ii = (i - imin) + 1
+                    jj = (j - jmin) + 1
+                    kk = (k - kmin) + 1
+                    weight = fraci(ii)*fracj(jj)*frack(kk)
+                    if (comp .eq. 1) then
+                        dens = solnData(G0DENS, i, j, k) 
+                        pres = solnData(G0PRES, i, j, k)
+                        xvel = solnData(G0XVEL, i, j, k)
+                        yvel = solnData(G0YVEL, i, j, k)
+                        zvel = solnData(G0ZVEL, i, j, k)
+                    else
+                        dens = solnData(G1DENS, i, j, k) 
+                        pres = solnData(G1PRES, i, j, k)
+                        xvel = solnData(G1XVEL, i, j, k)
+                        yvel = solnData(G1YVEL, i, j, k)
+                        zvel = solnData(G1ZVEL, i, j, k)
+                    end if
+                    intDens = intDens + dens*weight
+                    intPres = intPres + pres*weight
+                    intXvel = intXvel + xvel*weight
+                    intYvel = intYvel + yvel*weight
+                    intZvel = intZvel + zvel*weight
+                end do
+            end do
+        end do
+
+        state(DENS_VAL) = intDens
+        state(PRES_VAL) = intPres
+        state(VELX_VAL) = intXvel
+        state(VELY_VAL) = intYvel
+        state(VELZ_VAL) = intZvel        
+
+    end subroutine interpolateStates
+
+
+end subroutine FrontTracking_getVel

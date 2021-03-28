@@ -1,0 +1,18 @@
+FrontTier Front Tracking Module
+===============================
+
+To enable the Front Tracking module, simply configure with:
+	"--with-unit=FrontTracking"
+
+Front Tracking also requires the simulation implement the function:
+	Simulation_frontLevelFunc()
+
+A stub can be found in the simulation directory. This is a level
+function for a levelset initialization of the front. This function
+takes in the arguments x,y,z and returns the signed distance to the
+front. The sign indicates in which of two fluid components the point
+resides.
+
+The front propagation is a Lagrangian propagation of an unstructured
+mesh representing the front which propagates based on the fluid
+velocity interpolated to the front point.
